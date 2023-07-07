@@ -1,0 +1,122 @@
+################# Dimensional parameters #######################
+
+# Set the number of particles in the kernal
+variable	    neq equal 30 # Should be greater than 25 in 2D and >55 in 3D
+
+# Kernel radius for mass transport in liquid phase
+variable        h equal 1.0/${neq}
+
+# Particle spacing
+variable        dx equal ${h}/4.0
+
+# Kernel radius for diffuse interface (mass transport between liquid and solid, reaction rate)
+variable	    d equal 2.0*${dx}
+
+# Domain size
+variable        L_x equal 2.5
+variable        L_y equal 5.0
+
+################# SPH Particle properties #######################
+
+variable 	sph_rho equal 1.0
+variable    sph_mass equal ${sph_rho}*${dx}^2
+variable	sph_mass_thres equal 2*${sph_mass}
+variable	sph_mass_init1 equal ${sph_mass}
+
+# Constant concentration locations
+variable        anode_end equal 0.06
+variable        const_conc equal ${L_y}-0.06
+
+### Geometry of triangles along anode surface (forced roughness)
+#variable	    triwh       equal 10.0*${dx} # triangle width
+#variable        x1          equal ${L_x}*0.33 # triangle center line
+#variable        x2          equal ${L_x}*0.66 # triangle center line
+#variable        z0          equal 0.5*${dx} # triangle center line (z dim)
+#variable        yh          equal ${anode_end}+20.0*${dx} # triangle point stop location
+
+################# Diffusion properties #######################
+
+# Diffusion for anions [um2/s]
+variable        sph_DA equal 1.0
+
+# Diffusion fot cations  [um2/s]
+variable        sph_DC equal 1.0
+
+################# Reaction properties ########################
+
+# Initial reaction rate [um/s]
+variable        sph_RC equal 0.001/${neq}
+
+################# Damkohler number ############################
+
+# variable 	damk equal ${sph_RC}*(${const_conc_H}-${anode_end})/${sph_uni_DA}
+# print		"Damkohler number: ${damk}"
+
+################# Equilibrium and initial concentrations #######
+
+variable        sph_const_cC equal 0.5
+variable        sph_const_cA equal 0.5
+
+variable	sph_cA_init equal 0.5
+variable	sph_cC_init equal 0.5
+
+# Charging equilibrium concentration
+variable        sph_cCeq_ch equal 0.005  
+variable        sph_cAeq_ch equal 0.005
+
+################# Applied potential ###############################
+
+# Potentials: 4V/0.5mm = 8e-3 V/um, linear from const_conc_H to anode_end 
+
+# Charging potential
+variable        charging_voltage equal 24e-3
+variable        sph_applied_pot_ch equal ${charging_voltage}*(${const_conc}-${anode_end})
+################# Mobility properties ##############################
+# Anion mobility
+variable        sph_muA equal 0.5 #change to real
+
+# Cation mobility
+variable        sph_muC equal 0.5
+
+# Concentration to charge [C/L]
+# Faraday constant/(permitivity of water * Avacadros #)
+variable	sph_conc_to_charge equal 1.892e-6
+
+
+##########################################################################################
+##########################################################################################
+############################ Timestepping and run time ###################################
+##########################################################################################
+##########################################################################################
+
+# Calculate the stable dt based on the parameters
+
+include         settimestep.precipRCInit.lmp
+
+#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#
+#!#!#!#!#!#!#!#!#!#!#   options below   #!#!#!#!#!#!#!#!#!#
+#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#
+
+# Option 1:
+##########################################################################################
+# Printout frequency is set at a given dt (nfreqSecs) the same with different parameters #
+##########################################################################################
+ 
+# Set the constant dt for printout frequency
+variable          nfreqSecs equal 0.05
+
+# Calculate nfreq based on parameter-controlled dt 
+variable          nfreq equal round(${nfreqSecs}/${dt})
+
+####################### Choose how to get run time ######################
+# ## set the runtime 
+ variable          T equal 20.0
+#########################################################################
+
+# Calculate the number of timesteps for the run
+variable          nrun equal round(${T}/${dt})
+
+print             "charge running for ${nrun} steps"
+print             "creating data dump files every ${nfreq} steps"
+
+
