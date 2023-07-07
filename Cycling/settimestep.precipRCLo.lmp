@@ -1,0 +1,14 @@
+ variable BIG equal 1e20
+
+variable dt_DA equal 1/2.0*${dx}*${dx}/(${sph_DA})
+ 
+variable dt_DC equal 1/2.0*${dx}*${dx}/(${sph_DC})
+
+variable dt_muA equal 1/2.0*${dx}*${dx}/(${sph_muA})
+variable dt_muC equal 1/2.0*${dx}*${dx}/(${sph_muC})
+
+variable dt_RCL equal 1.0*${dx}/${sph_RC_Lo}
+
+shell /projectnb/ryanlab/mmorey/ButlerVolmer/min.sh dt ${dt_muC} ${dt_muA} ${dt_DA} ${dt_DC} ${dt_RCL}
+include in.dt
+variable dt_Lo equal ${dt}*0.1

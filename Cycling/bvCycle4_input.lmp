@@ -1,0 +1,197 @@
+# Diffusion - Migration - Potential - Reaction Modeling
+# Cycling
+# 11/08/21
+# Madison Morey
+
+log 		    ${dname}/log.lammps
+dimension       2
+units		    micro
+atom_style	    meso/new
+boundary        f f p
+
+# Adding particle properties - anion concentration, change in anion concentration, cation concentration, change in cation concentration, anion mobility, cation mobility,anion diffusion coefficient, cation diffusion coefficient, reaction rate coefficient for cations at anode, mass of metal, change in mass of metal, local potential, next local potential, next local potential, x-normal component, next x-normal component, y-normal component, next y-normal component, z-normal component, next z-normal component
+
+
+fix   	        prop all property/atom d_cA d_dcA d_cC d_dcC d_muA d_muC d_DA d_DC d_RC d_mM d_dmM d_local_pot d_nx d_ny d_nz ghost yes 
+
+# Particle property values
+include		vars.bv.cycle4.lmp
+
+# Domain creation and particle spacing
+lattice	        sq ${dx} origin 0.5 0.5 0	
+region		    box block 0 ${L_x} 0 ${L_y} 0 ${dx} units box
+create_box	    3 box
+create_atoms	1 box
+
+# Create regions
+region          rliquid     block EDGE EDGE ${anode_end} ${const_conc} EDGE EDGE units box
+region         rsolid      block EDGE EDGE EDGE ${anode_end} EDGE EDGE units box
+region          rconstconc  block EDGE EDGE ${const_conc} EDGE EDGE EDGE units box
+
+### Add heterogeneities, replace rsolid
+#region	      rsolid0 	  block EDGE EDGE EDGE ${anode_end} EDGE EDGE units box
+#region        rs1    	  cone y ${x1} ${z0} ${triwh} 0 ${anode_end} ${yh} units box
+#region        rs2    	  cone y ${x2} ${z0} ${triwh} 0 ${anode_end} ${yh} units box
+
+#region        rsolid  union 3 rs1 rsolid0 rs2
+
+# Combine regions into groups
+group           liquid      region rliquid
+group           constconc   region rconstconc
+group           solid	    region rsolid
+
+# Combine regions into groups
+set             group liquid    type 1 
+set             group constconc type 1
+set             group solid     type 2
+
+displace_atoms  all random 0.2 0.2 0 13245
+
+# Assign particle property values to regions
+include		particleProp.bv.cycle.lmp
+
+# Set the number of cycles
+
+variable  	total_cycles equal 1000
+variable  	total_half_cycles equal ${total_cycles}*2
+variable    acycle equal ${total_cycles}-1
+
+print		"**************************** Charge cycle number: 1/${total_half_cycles} *******************"
+
+########################################################################
+########################### Set fixes ##################################
+################## Constant across all runs ############################
+########################################################################
+
+# Calculate normals at interface
+fix             norm_calc       all sph/surfacenormal ${d}
+
+# Constant concentration fixes for boundary
+fix             constant_concentration_cA constconc sph/constant/cA ${sph_const_cA}
+fix             constant_concentration_cC constconc sph/constant/cC ${sph_const_cC}
+
+# Calculate the local potential
+fix             pot_calc0        all sph/electropotential ${h} ${sph_conc_to_charge} ${sph_applied_pot_ch} 0.0 ${L_y}
+
+# Sum the changes and precipitate/dissolve solids
+fix		sum_changes_fix all sph/concentration/mass
+fix		precip_diss_fix all sph/precipitation/dissolution/liquidRC ${sph_mass_thres} ${sph_cCeq_ch} ${sph_cAeq_ch}
+
+########################################################################
+####################### Set pair style #################################
+############## Pair style changes for cycling ##########################
+########################################################################
+
+# Initial pair style
+# Allows different reaction rates to be set for different groups
+
+pair_style      sph/twospecies/isodiffusion/migration/csr/constRC/bv1
+pair_coeff      * * ${h} ${d} ${sph_RC_Hi} ${sph_applied_pot_ch} ${sph_cA_init} ${sph_cC_init} ${sph_mass_thres}
+
+
+# For LAMMPS neighbor lists
+neighbor        ${h} bin
+
+# Dump fix 
+dump            dump_fix0 all custom ${nfreq} ${dname}/dump.*.dat id type x y d_dmM d_mM d_cA d_cC d_local_pot d_dcA d_dcC
+
+timestep        ${dt}
+
+# Print to screen 
+variable           time equal step*dt
+thermo_style       custom step v_time
+thermo             ${nfreq}
+
+run             ${nrun_hi}
+
+
+# ####################################################################################
+# ################################ Loop for running cycles ###########################
+# ####################################################################################
+
+# # a: the variable to be incremented, loop: the variable where the loop will return to
+# # : the number of times a will be incrememted before the loop exits
+# # Further clarification in docs (lammps.sandia.gov/doc/jump.html)
+
+variable      a loop ${acycle}
+label	      loop
+variable      half_cycle_number equal ${a}*2
+print		"**************************** Half cycle number: ${half_cycle_number}/${total_half_cycles} *******************"
+
+# Dump fix
+variable      dump1 equal ${a}*2
+
+# Calculate the local potential
+fix           pot_calc0          all sph/electropotential ${h} ${sph_conc_to_charge} ${sph_applied_pot_disch} 0.0 ${L_y}
+
+pair_style    sph/twospecies/isodiffusion/migration/csr/constRC/bv1
+pair_coeff      * * ${h} ${d} ${sph_RC_Lo} ${sph_applied_pot_ch} ${sph_cA_init} ${sph_cC_init} ${sph_mass_thres}
+
+# # For LAMMPS neighbor lists
+neighbor      ${h} bin
+
+
+dump          ${dump1} all custom ${nfreq} ${dname}/dump.*.dat id type x y d_dmM d_mM d_cA d_cC d_local_pot d_dcA d_dcC
+timestep      ${dt}
+
+# # Print to screen
+variable      time equal step*dt
+thermo_style  custom step v_time
+thermo        ${nfreq}
+
+run  ${nrun_lo}
+
+#####################################
+variable    half_cycle_number equal ${a}*2+1
+print  "**************************** Charge cycle number: ${half_cycle_number}/${total_half_cycles} *******************"
+variable      dump2 equal ${a}*2+1
+
+# Calculate the local potential
+fix           pot_calc0          all sph/electropotential ${h} ${sph_conc_to_charge} ${sph_applied_pot_ch} 0.0 ${L_y}
+
+pair_style    sph/twospecies/isodiffusion/migration/csr/constRC/bv1
+pair_coeff      * * ${h} ${d} ${sph_RC_Hi} ${sph_applied_pot_ch} ${sph_cA_init} ${sph_cC_init} ${sph_mass_thres}
+
+dump          ${dump2} all custom ${nfreq} ${dname}/dump.*.dat id type x y d_dmM d_mM d_cA d_cC d_local_pot d_dcA d_dcC
+
+timestep      ${dt}
+
+# Print to screen 
+variable      time equal step*dt
+thermo_style  custom step v_time
+thermo        ${nfreq}
+
+run     ${nrun_hi}
+
+# increment a
+next	a
+
+# jump back to this file to the label "loop"
+jump	bvCycle4_input.lmp loop
+
+# End loop
+# #############################################################################################
+
+# # Complete last half cycle
+
+print "**************************** Last discharge cycle number: ${total_half_cycles}/${total_half_cycles} *******************"
+
+# Dump fix
+variable     dump1 equal ${total_half_cycles}+2
+
+# Calculate the local potential
+fix           pot_calc0          all sph/electropotential ${h} ${sph_conc_to_charge} ${sph_applied_pot_disch} 0.0 ${L_y}
+
+# pair_style    sph/twospecies/isodiffusion/migration/csr/constRC/bv1
+pair_coeff      * * ${h} ${d} ${sph_RC_Lo} ${sph_applied_pot_ch} ${sph_cA_init} ${sph_cC_init} ${sph_mass_thres}
+
+dump         ${dump1} all custom ${nfreq} ${dname}/dump.*.dat id type x y d_dmM d_mM d_cA d_cC d_local_pot d_dcA d_dcC
+
+timestep     ${dt}
+
+# Print to screen
+variable     time equal step*dt
+thermo_style custom step v_time
+thermo       ${nfreq}
+
+run          ${nrun_lo}

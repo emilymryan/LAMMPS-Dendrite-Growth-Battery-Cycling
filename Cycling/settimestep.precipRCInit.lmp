@@ -1,0 +1,19 @@
+variable BIG equal 1e20
+
+if "${sph_muA} !=0" then "variable dt_muA equal 1/2.0*${dx}*${dx}/${sph_muA}" &
+else "variable dt_muA equal 1000"
+if "${sph_muC} !=0" then "variable dt_muC equal 1/2.0*${dx}*${dx}/${sph_muC}" &
+else "variable dt_muC equal 1000"
+
+if "${sph_DA} !=0" then "variable dt_DA equal 1/2.0*${dx}*${dx}/(${sph_DA})" &
+else "variable dt_DA equal 1000"
+if "${sph_DC} !=0" then "variable dt_DC equal 1/2.0*${dx}*${dx}/(${sph_DC})" &
+else "variable dt_DC equal 1000"
+
+if "${sph_RC_Hi} !=0" then "variable dt_RC_Hi equal ${dx}/${sph_RC_Hi}" &
+else "variable dt_RC_Hi equal 1000"
+
+
+shell /projectnb/ryanlab/tmelsh/chargingProfiles/final/ButlerVolmer/Cycling/min.sh dt ${dt_muC} ${dt_muA} ${dt_DA} ${dt_DC} ${dt_RC_Hi}
+include in.dt
+variable dt equal ${dt}*0.1

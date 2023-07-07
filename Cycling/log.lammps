@@ -1,0 +1,8 @@
+LAMMPS (8 Apr 2021)
+# Diffusion - Migration - Potential - Reaction Modeling
+# Cycling
+# 11/08/21
+# Madison Morey
+
+log 		    ${dname}/log.lammps
+log 		    /projectnb/ryanlab/tmelsh/chargingProfiles/final/results/BVcycling/bvCycle3_4074845/log.lammps

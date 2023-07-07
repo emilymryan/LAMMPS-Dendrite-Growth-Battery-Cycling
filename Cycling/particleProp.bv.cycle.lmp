@@ -1,0 +1,82 @@
+# Properties for all
+set		atom * sph/rho ${sph_rho}
+set	    atom * mass ${sph_mass}
+
+
+# Properties for Liquid particles
+
+set     group liquid d_mM 0.0
+set     group liquid d_dmM 0.0
+
+set     group liquid d_cA ${sph_cA_init}
+set     group liquid d_dcA 0.0
+
+set     group liquid d_cC ${sph_cA_init}
+set     group liquid d_dcC 0.0
+
+set     group liquid d_local_pot 0.0
+
+set		group liquid d_DA ${sph_DA} # x dir anion diffusion coefficient
+set		group liquid d_DC ${sph_DC} # y dir cation diffusion coefficient
+
+set		group liquid d_muA ${sph_muA} # anion mobility
+set		group liquid d_muC ${sph_muC} # cation mobility
+
+set		group liquid d_RC ${sph_RC_Hi}  # reaction rate
+
+set		group liquid d_nx 0.0
+set		group liquid d_ny 0.0
+set		group liquid d_nz 0.0
+
+# Properties for boundary conditions
+
+set 	group constconc d_cC ${sph_const_cC}
+set 	group constconc d_dcC 0.0
+
+set 	group constconc d_cA ${sph_const_cA}
+set 	group constconc d_dcA 0.0
+
+set     group constconc d_mM 0.0
+set     group constconc d_dmM 0.0
+
+set		group constconc d_DA ${sph_DA} # x dir anion diffusion coefficient
+set		group constconc d_DC ${sph_DC} # x dir cation diffusion coefficient
+
+set		group constconc d_muA ${sph_muA} # anion mobility
+set		group constconc d_muC ${sph_muC} # cation mobility
+
+set     group constconc d_local_pot 0.0
+
+set		group constconc d_RC  0.0  # reaction rate
+
+set		group constconc d_nx 0.0
+set		group constconc d_ny 0.0
+set		group constconc d_nz 0.0
+
+
+# Set solid particle properties
+
+set     group solid d_cC 0.0
+set     group solid d_dcC 0.0
+
+set     group solid d_cA 0.0
+set     group solid d_dcA 0.0
+
+set     group solid d_mM ${sph_mass_init1}
+set     group solid d_dmM 0.0
+
+set     group solid d_DA ${sph_DA} # x dir anion diffusion coefficient
+set     group solid d_DC ${sph_DC} # x dir cation diffusion coefficient
+
+set     group solid d_muA 0.0 # anion mobility
+set     group solid d_muC 0.0 # cation mobility
+
+set     group solid d_local_pot 0.0
+
+set     group solid d_RC  ${sph_RC_Hi}  # reaction rate
+
+set     group solid d_nx 0.0
+set     group solid d_ny 0.0
+set     group solid d_nz 0.0
+
+
